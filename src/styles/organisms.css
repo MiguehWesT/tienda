@@ -1,7 +1,3 @@
-/* ============================================
-   ORGANISMS - Secciones completas
-   ============================================ */
-
 /* HEADER */
 .header {
   background: var(--color-dark);
@@ -130,9 +126,6 @@
   border-color: var(--color-primary-dark);
 }
 
-/* ============================================
-   RESPONSIVE HEADER
-   ============================================ */
 @media (max-width: 1024px) {
   .main-nav {
     gap: 1rem;
