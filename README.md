@@ -46,19 +46,7 @@ Miguel Trujillo
 
 
 
-El proyecto sigue la metodología **Atomic Design** de Brad Frost:
-
-
-┌─────────────────────────────────────┐
-│            PÁGINAS                  │  Templates completos
-├─────────────────────────────────────┤
-│          ORGANISMOS                 │  Header, Footer, ProductGrid
-├─────────────────────────────────────┤
-│          MOLÉCULAS                  │  ProductCard, CartItem, FormGroup
-├─────────────────────────────────────┤
-│            ÁTOMOS                   │  Button, Input, Badge, Label
-└─────────────────────────────────────┘
-
+El proyecto sigue la metodología **Atomic Design**:
 
 ## 📦 Instalación
 
