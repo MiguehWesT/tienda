@@ -1,37 +1,24 @@
-module.exports = function(config) {
-  config.set({
-    frameworks: ['jasmine'],
-    files: [
-      'test/**/*.spec.js'
+const webpackConfig = {
+  mode: "development",
+  module: {
+    rules: [
+      { test: /\.(js|jsx)$/, exclude: /node_modules/, use: "babel-loader" },
+      { test: /\.css$/, use: ["style-loader", "css-loader"] },
+      { test: /\.(svg|png|jpg|jpeg|gif)$/, use: "file-loader" }
     ],
-    preprocessors: {
-      'test/**/*.spec.js': ['webpack', 'sourcemap']
-    },
-    webpack: {
-      mode: 'development',
-      devtool: 'inline-source-map',
-      module: {
-        rules: [
-          {
-            test: /\.js$/,
-            exclude: /node_modules/,
-            use: {
-              loader: 'babel-loader',
-              options: {
-                presets: ['@babel/preset-env', '@babel/preset-react']
-              }
-            }
-          }
-        ]
-      }
-    },
-    reporters: ['progress'],
-    port: 9876,
-    colors: true,
-    logLevel: config.LOG_INFO,
-    autoWatch: true,
-    browsers: ['Chrome'],
-    singleRun: false,
-    concurrency: Infinity
-  })
-}
+  },
+  resolve: { extensions: [".js", ".jsx"] },
+};
+
+module.exports = function (config) {
+  config.set({
+    basePath: "",
+    frameworks: ["jasmine"],
+    files: ["test/**/*.spec.js"],
+    preprocessors: { "test/**/*.spec.js": ["webpack"] },
+    webpack: webpackConfig,
+    browsers: ["ChromeHeadless"],
+    singleRun: true,
+    reporters: ["progress"],
+  });
+};
