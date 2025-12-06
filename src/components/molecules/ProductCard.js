@@ -5,34 +5,45 @@ import Badge from '../atoms/Badge';
 
 const ProductCard = ({ product, onClick }) => {
   const { addToCart } = useApp();
-  const finalPrice = product.discount 
-    ? product.price * (1 - product.discount / 100) 
-    : product.price;
+
+  // Convertimos price y discount a números seguros
+  const price = Number(product.price) || 0;
+  const discount = Number(product.discount) || 0;
+
+  // Calculamos precio final de forma segura
+  const finalPrice = discount > 0
+    ? price * (1 - discount / 100)
+    : price;
 
   return (
     <div className="product-card" onClick={onClick}>
       <div className="product-image">
-        <img 
-          src={product.image} 
+        <img
+          src={product.image}
           alt={product.name}
           onError={(e) => {
-            // placeholder en caso de que no cargue la imagen
             e.target.src = 'https://via.placeholder.com/500x500?text=Sin+Imagen';
           }}
         />
       </div>
+
       <div className="product-info">
         <h3>{product.name}</h3>
+
         <div className="product-price">
-          {product.discount && (
+          {discount > 0 && (
             <>
-              <span className="original-price">${product.price}</span>
-              <Badge variant="sale">-{product.discount}%</Badge>
+              <span className="original-price">${price.toLocaleString()}</span>
+              <Badge variant="sale">-{discount}%</Badge>
             </>
           )}
-          <span className="current-price">${finalPrice.toFixed(2)}</span>
+
+          <span className="current-price">
+            ${finalPrice.toLocaleString()}
+          </span>
         </div>
-        <Button 
+
+        <Button
           onClick={(e) => {
             e.stopPropagation();
             addToCart(product);

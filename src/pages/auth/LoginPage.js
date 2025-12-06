@@ -5,19 +5,21 @@ import FormGroup from '../../components/molecules/FormGroup';
 import Input from '../../components/atoms/Input';
 
 const LoginPage = () => {
-  const { setUser, users, setCurrentPage } = useApp();
+  const { login, setCurrentPage } = useApp();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const user = users.find(u => u.email === email && u.password === password);
-    if (user) {
-      setUser(user);
+    setError("");
+
+    try {
+      await login(email, password);
       setCurrentPage('home');
-    } else {
-      setError('Credenciales incorrectas');
+    } catch (err) {
+      console.error(err);
+      setError(err.message || "Error al iniciar sesión");
     }
   };
 
@@ -27,26 +29,33 @@ const LoginPage = () => {
         <div className="auth-form">
           <h1>Iniciar sesión</h1>
           <form onSubmit={handleSubmit}>
+
             <FormGroup label="Email" required>
-              <Input 
+              <Input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
               />
             </FormGroup>
+
             <FormGroup label="Contraseña" required>
-              <Input 
+              <Input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
               />
             </FormGroup>
+
             {error && <p className="error">{error}</p>}
+
             <Button type="submit">Iniciar sesión</Button>
-            <p>¿No tienes cuenta? <a onClick={() => setCurrentPage('register')}>Regístrate</a></p>
-            <p className="hint">Usuario demo: admin@store.com / admin123</p>
+
+            <p>
+              ¿No tienes cuenta?{' '}
+              <a onClick={() => setCurrentPage('register')}>Regístrate</a>
+            </p>
           </form>
         </div>
       </div>

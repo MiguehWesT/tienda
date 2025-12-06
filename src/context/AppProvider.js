@@ -1,210 +1,294 @@
-import React, { useState } from 'react';
-import AppContext from './AppContext';
+import React, { useEffect, useState } from "react";
+import AppContext from "./AppContext";
+
+// Servicios API
+import { getUsuarios } from "../api/usuariosService";
+
+import {
+  login as loginService,
+  register as registerService,
+  verifyToken as verifyTokenService,
+  logout as logoutService,
+} from "../api/authService";
+
+import { crearBoleta, getBoletas } from "../api/boletasService";
+
+const API_BASE = "http://3.236.252.150:3000/api/v1";
 
 export const AppProvider = ({ children }) => {
+  const [currentPage, setCurrentPage] = useState("home");
 
-  // ESTADOS
-  const [currentPage, setCurrentPage] = useState('home');
+  // Auth
   const [user, setUser] = useState(null);
+
+  // Carrito
   const [cart, setCart] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [checkoutStep, setCheckoutStep] = useState(1);
 
-  // PRODUCTOS
-const [products, setProducts] = useState([
-  { 
-    id: 1, 
-    name: 'RTX 5070 ASUS PRIME', 
-    price: 800000, 
-    category: 'componentes', 
-    image: '/images/products/grafica.png', // ← Cambiado
-    stock: 15, 
-    featured: true, 
-    discount: 10 
-  },
-  { 
-    id: 2, 
-    name: 'PROCESADOR RYZEN 7 7800X3D', 
-    price: 400000, 
-    category: 'componentes', 
-    image: '/images/products/procesador.png', // ← Cambiado
-    stock: 25, 
-    featured: true 
-  },
-  { 
-    id: 3, 
-    name: 'PROCESADOR RYZEN 9 9900X3D', 
-    price: 700000, 
-    category: 'componentes', 
-    image: '/images/products/procesador2.png', // ← Cambiado
-    stock: 50 
-  },
-  { 
-    id: 4, 
-    name: 'MONITOR 4K ASUS ROG', 
-    price: 600000, 
-    category: 'perifericos', 
-    image: '/images/products/monitor.png', // ← Cambiado
-    stock: 30, 
-    discount: 15 
-  },
-  { 
-    id: 5, 
-    name: 'FUENTE DE PODER EVGA 750GS', 
-    price: 90000, 
-    category: 'componentes', 
-    image: '/images/products/fuente.png', // ← Cambiado
-    stock: 20, 
-    featured: true 
-  },
-  { 
-    id: 6, 
-    name: 'GABINETE LIAN LI DYNAMIC 011 ROG', 
-    price: 200000, 
-    category: 'componentes', 
-    image: '/images/products/gabinete.jpg', // ← Cambiado
-    stock: 18 
-  },
-  { 
-    id: 7, 
-    name: 'RTX 5080 ROG ASTRAL', 
-    price: 1800000, 
-    category: 'componentes', 
-    image: '/images/products/grafica2.png', // ← Cambiado
-    stock: 100, 
-    discount: 20 
-  },
-  { 
-    id: 8, 
-    name: 'Teclado Mecánico RAZER BLACKWIDOW V4', 
-    price: 150000, 
-    category: 'perifericos', 
-    image: '/images/products/teclado.png', // ← Cambiado
-    stock: 45 
-  },
-  { 
-    id: 9, 
-    name: 'AUDIFONOS GAMING ASTRO A50', 
-    price: 160000, 
-    category: 'perifericos', 
-    image: '/images/products/audifonos.png', // ← Cambiado
-    stock: 12, 
-    featured: true 
-  },
-  { 
-    id: 10, 
-    name: 'MOUSE GAMING RAZER VIPER ULTIMATE', 
-    price: 120000, 
-    category: 'perifericos', 
-    image: '/images/products/mouse.png', // ← Cambiado
-    stock: 80 
-  }
-]);
+  // Datos
+  const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [blogPosts, setBlogPosts] = useState([]);
 
-  // CATEGORÍAS
-  const [categories, setCategories] = useState([
-    { id: 1, name: 'componentes', label: 'Componentes', count: 6 },
-    { id: 2, name: 'perifericos', label: 'Perifericos', count: 4 }
-  ]);
+  const [users, setUsers] = useState([]);
 
-  // ÓRDENES
+  // Boletas (ordenes)
   const [orders, setOrders] = useState([]);
 
-  // USUARIOS
-  const [users, setUsers] = useState([
-    { id: 1, email: 'admin@store.com', password: 'admin123', name: 'Admin', role: 'admin' },
-    { id: 2, email: 'user@example.com', password: 'user123', name: 'Usuario Test', role: 'user' }
-  ]);
+  // Estado global
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
 
-  // BLOG
-  const [blogPosts, setBlogPosts] = useState([
-    { id: 1, title: 'Las mejores laptops de 2025', excerpt: 'Descubre nuestra selección de las mejores laptos calidad precio de este 2025', date: '12-9-2025', image: '💻' },
-    { id: 2, title: 'Guía de compra: Smartphones', excerpt: 'Todo lo que necesitas saber al elegir un smartphone', date: '05-10-2025', image: '📱' },
-    { id: 3, title: 'Accesorios imprescindibles', excerpt: 'Accesorios que no pueden faltar en tu setup', date: '12-10-2025', image: '🎧' }
-  ]);
+  useEffect(() => {
+    const initAuth = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const storedUser = localStorage.getItem("user");
 
-  // FUNCIONES DEL CARRITO
+        if (!token && storedUser) {
+          setUser(JSON.parse(storedUser));
+          return;
+        }
+
+        if (!token) return;
+
+        const decodedUser = await verifyTokenService();
+        setUser(decodedUser);
+      } catch (err) {
+        console.error("Error verificando token:", err);
+        logoutService();
+        setUser(null);
+      } finally {
+        setAuthLoading(false);
+      }
+    };
+
+    initAuth();
+  }, []);
+
+  //   Cargar datos iniciales
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const [
+          prodRes,
+          catRes,
+          blogRes,
+          boletasData,
+          usuariosData
+        ] = await Promise.all([
+          fetch(`${API_BASE}/productos`),
+          fetch(`${API_BASE}/categorias`),
+          fetch(`${API_BASE}/blog`),
+          getBoletas().catch(() => []),
+          getUsuarios().catch(() => []) // ⬅️ NUEVO
+        ]);
+
+        const [prodJson, catJson, blogJson] = await Promise.all([
+          prodRes.json(),
+          catRes.json(),
+          blogRes.json(),
+        ]);
+
+        const mappedProducts = (prodJson.data || []).map((p) => ({
+          id: p.id,
+          name: p.name || p.nombre,
+          price: Number(p.price ?? p.precio) || 0,
+          image: p.image || p.imagen,
+          stock: p.stock,
+          discount: p.discount ?? p.descuento ?? 0,
+          featured: p.featured ?? p.destacado ?? false,
+          category: p.category || p.categoria_nombre || "",
+        }));
+
+        setProducts(mappedProducts);
+
+
+        const mappedCategories = (catJson.data || []).map((c) => ({
+          id: c.id,
+          name: c.nombre,
+          label: c.label,
+          count: mappedProducts.filter(
+            (p) => p.category === c.nombre
+          ).length,
+        }));
+
+        setCategories(mappedCategories);
+
+        setBlogPosts(blogJson.data || []);
+
+
+        setOrders(boletasData);
+
+
+        setUsers(usuariosData);
+
+      } catch (err) {
+        console.error("Error al cargar datos:", err);
+        setError("No se pudieron cargar los datos del servidor.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, []);
+
 
   const addToCart = (product, quantity = 1) => {
-    const existing = cart.find(item => item.id === product.id);
-    if (existing) {
-      setCart(cart.map(item => 
-        item.id === product.id ? { ...item, quantity: item.quantity + quantity } : item
-      ));
-    } else {
-      setCart([...cart, { ...product, quantity }]);
-    }
+    setCart((prev) => {
+      const existing = prev.find((item) => item.id === product.id);
+      if (existing) {
+        return prev.map((item) =>
+          item.id === product.id
+            ? { ...item, quantity: item.quantity + quantity }
+            : item
+        );
+      }
+      return [...prev, { ...product, quantity }];
+    });
   };
 
   const removeFromCart = (productId) => {
-    setCart(cart.filter(item => item.id !== productId));
+    setCart((prev) => prev.filter((item) => item.id !== productId));
   };
 
   const updateCartQuantity = (productId, quantity) => {
-    if (quantity <= 0) {
-      removeFromCart(productId);
-    } else {
-      setCart(cart.map(item => 
+    setCart((prev) => {
+      if (quantity <= 0) {
+        return prev.filter((item) => item.id !== productId);
+      }
+      return prev.map((item) =>
         item.id === productId ? { ...item, quantity } : item
-      ));
-    }
+      );
+    });
   };
 
   const getCartTotal = () => {
     return cart.reduce((total, item) => {
-      const price = item.discount ? item.price * (1 - item.discount / 100) : item.price;
-      return total + (price * item.quantity);
+      const price = item.discount
+        ? item.price * (1 - item.discount / 100)
+        : item.price;
+      return total + price * item.quantity;
     }, 0);
   };
 
+  //   Crear boleta / compra
+  const confirmarCompra = async (formData) => {
+    if (cart.length === 0) {
+      throw new Error("El carrito está vacío");
+    }
 
-  // FUNCIONES DE ÓRDENES
+    const items = cart.map((item) => ({
+      producto_id: item.id,
+      cantidad: item.quantity,
+    }));
 
-  const placeOrder = (orderData) => {
-    const order = {
-      id: orders.length + 1,
-      userId: user?.id,
-      items: [...cart],
-      total: getCartTotal(),
-      date: new Date().toISOString(),
-      status: 'completed',
-      ...orderData
+    const payload = {
+      usuario_id: user?.id || null,
+      nombre_cliente: formData.name,
+      email_cliente: formData.email,
+      direccion: formData.address,
+      ciudad: formData.city,
+      codigo_postal: formData.postalCode,
+      items,
     };
-    setOrders([...orders, order]);
+
+    const boleta = await crearBoleta(payload);
+
+    setOrders((prev) => [...prev, boleta]);
+
     setCart([]);
-    return order;
+    return boleta;
   };
 
-  // VALOR DEL CONTEXTO
+
+  //   AUTH: login / register
+
+  const login = async (email, password) => {
+    setError(null);
+    try {
+      const loggedUser = await loginService(email, password);
+      if (!loggedUser) {
+        throw new Error("Credenciales inválidas");
+      }
+
+      const userNormalized = {
+        ...loggedUser,
+        name: loggedUser.name || loggedUser.nombre || "",
+        role: loggedUser.role || loggedUser.rol || "cliente",
+      };
+
+      setUser(userNormalized);
+      return userNormalized;
+    } catch (err) {
+      console.error("Error en login (AppProvider):", err);
+      throw err;
+    }
+  };
+
+  const register = async (nombre, email, password) => {
+    setError(null);
+    try {
+      const newUser = await registerService(nombre, email, password);
+      if (!newUser) {
+        throw new Error("No se pudo registrar el usuario");
+      }
+      setUser(newUser);
+      return newUser;
+    } catch (err) {
+      console.error("Error en register (AppProvider):", err);
+      throw err;
+    }
+  };
+
+  const logout = () => {
+    logoutService();
+    setUser(null);
+  };
+
+  //   CONTEXTO GLOBAL
 
   const value = {
-    // Estados
     currentPage,
     setCurrentPage,
+
     user,
     setUser,
+    login,
+    register,
+    logout,
+    authLoading,
+
     cart,
-    selectedProduct,
-    setSelectedProduct,
-    checkoutStep,
-    setCheckoutStep,
-    products,
-    setProducts,
-    categories,
-    setCategories,
-    orders,
-    setOrders,
-    users,
-    setUsers,
-    blogPosts,
-    setBlogPosts,
-    
-    // Funciones
     addToCart,
     removeFromCart,
     updateCartQuantity,
     getCartTotal,
-    placeOrder
+
+    selectedProduct,
+    setSelectedProduct,
+    checkoutStep,
+    setCheckoutStep,
+
+    products,
+    categories,
+    blogPosts,
+
+    orders,
+    confirmarCompra,
+
+    users,
+    setUsers,
+
+    loading,
+    error,
+    setError,
   };
 
   return (
@@ -213,3 +297,5 @@ const [products, setProducts] = useState([
     </AppContext.Provider>
   );
 };
+
+export default AppProvider;
